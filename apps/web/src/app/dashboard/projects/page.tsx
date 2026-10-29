@@ -53,7 +53,29 @@ export default function ProjectsPage() {
       setProjects((prev) => [data.project, ...prev]);
       setNewName("");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create the project.");
+      // Safe diagnostic: no token, secret, or request body is logged —
+      // only the error's own type/status/message, which is exactly
+      // what's needed to tell "network/CORS failure" (status 0) apart
+      // from "the server rejected the request" (a real HTTP status)
+      // apart from "something unexpected threw" (not an ApiError at
+      // all) when debugging a report of "Create does nothing".
+      console.error("[ProjectsPage] Create project failed:", {
+        isApiError: err instanceof ApiError,
+        status: err instanceof ApiError ? err.status : undefined,
+        message: err instanceof Error ? err.message : String(err),
+      });
+
+      if (err instanceof ApiError) {
+        setError(
+          err.status === 0
+            ? err.message
+            : `${err.message} (status ${err.status})`
+        );
+      } else {
+        setError(
+          "Something went wrong while creating the project. Check the browser console for details."
+        );
+      }
     } finally {
       setCreating(false);
     }
@@ -113,10 +135,11 @@ export default function ProjectsPage() {
         <button
           onClick={handleCreate}
           disabled={creating || !newName.trim()}
+          title={!newName.trim() ? "Type a project name to enable Create" : undefined}
           className="flex items-center gap-2 rounded-xl bg-aubergine px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-aubergine/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <NavIcon name="plus" className="h-4 w-4" />
-          Create
+          {creating ? "Creating..." : "Create"}
         </button>
       </div>
 

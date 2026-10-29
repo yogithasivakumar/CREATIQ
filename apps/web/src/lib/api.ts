@@ -59,6 +59,14 @@ export async function apiFetch<T>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    // Safe diagnostic: method, path, and HTTP status only — never the
+    // Authorization header, the request body, or any response field
+    // besides the already-generic `error` message the backend chose
+    // to send back.
+    console.error(
+      `[apiFetch] ${options.method ?? "GET"} ${path} failed with status ${response.status}:`,
+      data.error
+    );
     throw new ApiError(response.status, data.error || "Request failed. Please try again.");
   }
 
