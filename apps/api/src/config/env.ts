@@ -15,9 +15,14 @@ const envSchema = z.object({
 
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
 
-  // Optional: enables the real Cloudflare Workers AI REST provider.
-  // See src/services/ai/README.md for cost details. Left unset, the
-  // backend falls back to a no-cost stub provider.
+  // Which image-generation provider to use. Defaults to "stub" (a
+  // deterministic, no-cost placeholder) so real generation is never
+  // enabled by accident. Set to "cloudflare" to use real Cloudflare
+  // Workers AI — that also requires CLOUDFLARE_ACCOUNT_ID and
+  // CLOUDFLARE_API_TOKEN; if either is missing, every generation
+  // request fails with a clear configuration error rather than
+  // silently using the stub. See src/services/ai/README.md.
+  AI_PROVIDER: z.enum(["stub", "cloudflare"]).default("stub"),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
 });
@@ -45,4 +50,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
 
   cachedEnv = parsed.data;
   return cachedEnv;
+}
+
+// Test-only: clears the cached environment so tests can re-load with
+// different process.env values.
+export function resetEnvForTests(): void {
+  cachedEnv = undefined;
 }

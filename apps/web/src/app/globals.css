@@ -3,6 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* CREATIQ brand palette */
+  --color-silver: #dde3e8;
+  --color-aubergine: #3a0f34;
+  --color-marigold: #eaaa00;
 }
 
 @theme inline {
@@ -10,6 +15,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-silver: var(--color-silver);
+  --color-aubergine: var(--color-aubergine);
+  --color-marigold: var(--color-marigold);
 }
 
 @media (prefers-color-scheme: dark) {

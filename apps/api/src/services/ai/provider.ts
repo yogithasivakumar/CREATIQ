@@ -15,12 +15,23 @@ export interface ImageGenerationProvider {
   ): Promise<ImageGenerationResult>;
 }
 
+export type ImageGenerationErrorKind =
+  | "not_configured"
+  | "quota_exhausted"
+  | "rate_limited"
+  | "provider_error"
+  | "invalid_output";
+
 export class ImageGenerationError extends Error {
+  readonly kind: ImageGenerationErrorKind;
+
   constructor(
     message: string,
+    kind: ImageGenerationErrorKind = "provider_error",
     readonly cause?: unknown
   ) {
     super(message);
     this.name = "ImageGenerationError";
+    this.kind = kind;
   }
 }
