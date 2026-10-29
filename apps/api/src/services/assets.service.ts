@@ -3,7 +3,11 @@ import { getSupabaseAdminClient } from "./supabase.service.js";
 import { loadEnv } from "../config/env.js";
 import { InvalidImageOutputError, validateJpegOutput } from "./ai/imageValidation.js";
 import { AppError, notFound } from "./appError.js";
-import type { ListAssetsQuery, SaveAssetRequest } from "../validation/asset.schema.js";
+import type {
+  ListAssetsQuery,
+  SaveAssetRequest,
+  UpdateAssetProjectRequest,
+} from "../validation/asset.schema.js";
 
 export interface AssetDto {
   id: string;
@@ -114,6 +118,28 @@ export async function listAssets(
   };
 }
 
+// Confirms a project id belongs to the caller's own workspace before
+// any asset is linked to it — the one check standing between "assign
+// to my project" and an IDOR that links an asset into someone else's
+// project by guessing/brute-forcing a UUID.
+async function assertProjectInWorkspace(workspaceId: string, projectId: string): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (projectError) {
+    throw new Error(`Failed to verify project: ${projectError.message}`);
+  }
+
+  if (!project) {
+    throw notFound("Project");
+  }
+}
+
 async function findAssetRow(workspaceId: string, assetId: string): Promise<AssetRow | null> {
   const supabase = getSupabaseAdminClient();
 
@@ -143,6 +169,44 @@ export async function getAsset(workspaceId: string, assetId: string): Promise<As
   return toDto(row);
 }
 
+// Assigns an existing library asset to a project, moves it between
+// projects, or clears its assignment (projectId: null) — "No project".
+// Both the asset and (when non-null) the target project must already
+// belong to the caller's own workspace; this never touches the file
+// in storage, only the assets.project_id column.
+export async function updateAssetProject(
+  workspaceId: string,
+  assetId: string,
+  input: UpdateAssetProjectRequest
+): Promise<AssetDto> {
+  const existing = await findAssetRow(workspaceId, assetId);
+
+  if (!existing) {
+    throw notFound("Asset");
+  }
+
+  if (input.projectId !== null) {
+    await assertProjectInWorkspace(workspaceId, input.projectId);
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("assets")
+    .update({ project_id: input.projectId })
+    .eq("workspace_id", workspaceId)
+    .eq("id", assetId)
+    .select(
+      "id, workspace_id, project_id, storage_key, prompt, mime_type, width, height, file_size_bytes, created_at"
+    )
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to update asset's project: ${error?.message ?? "unknown error"}`);
+  }
+
+  return toDto(data as AssetRow);
+}
+
 // Validates and project-checks the image, uploads it to the private
 // bucket under <workspace_id>/<uuid>.jpg (matching the storage RLS
 // convention), and records it using the existing generation_jobs /
@@ -167,21 +231,7 @@ export async function saveGeneratedAsset(
   const buffer = Buffer.from(input.image, "base64");
 
   if (input.projectId) {
-    const supabase = getSupabaseAdminClient();
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("workspace_id", workspaceId)
-      .eq("id", input.projectId)
-      .maybeSingle();
-
-    if (projectError) {
-      throw new Error(`Failed to verify project: ${projectError.message}`);
-    }
-
-    if (!project) {
-      throw notFound("Project");
-    }
+    await assertProjectInWorkspace(workspaceId, input.projectId);
   }
 
   const env = loadEnv();

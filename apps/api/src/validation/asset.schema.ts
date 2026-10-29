@@ -23,3 +23,12 @@ export const saveAssetSchema = z.object({
 });
 
 export type SaveAssetRequest = z.infer<typeof saveAssetSchema>;
+
+// Assigns, moves, or unassigns an asset's project. `projectId: null`
+// explicitly clears the assignment ("No project"); omitting the field
+// entirely is a validation error — the caller must say what they want.
+export const updateAssetProjectSchema = z.object({
+  projectId: z.string().uuid().nullable(),
+});
+
+export type UpdateAssetProjectRequest = z.infer<typeof updateAssetProjectSchema>;

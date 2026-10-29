@@ -16,12 +16,17 @@ function formatDateTime(iso: string): string {
 
 export function AssetDetailModal({
   asset,
+  projectName,
   onClose,
   onDelete,
+  onAssign,
 }: {
   asset: Asset;
+  /** The current project's name, if the asset is assigned to one. */
+  projectName?: string | null;
   onClose: () => void;
   onDelete: () => void;
+  onAssign: () => void;
 }) {
   return (
     <div
@@ -59,6 +64,18 @@ export function AssetDetailModal({
             <div>
               <dt className="font-medium text-aubergine/50">Prompt</dt>
               <dd className="mt-1 text-aubergine">{asset.prompt ?? "No prompt recorded"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-aubergine/50">Project</dt>
+              <dd className="mt-1 flex items-center justify-between gap-2">
+                <span className="text-aubergine">{projectName ?? "No project"}</span>
+                <button
+                  onClick={onAssign}
+                  className="shrink-0 text-xs font-semibold text-marigold hover:underline"
+                >
+                  Move
+                </button>
+              </dd>
             </div>
             <div>
               <dt className="font-medium text-aubergine/50">Dimensions</dt>

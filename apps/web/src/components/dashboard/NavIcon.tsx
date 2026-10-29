@@ -17,6 +17,7 @@ const PATHS: Record<string, string> = {
   plus: "M12 5v14M5 12h14",
   grid: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z",
   save: "M5 4h11l3 3v13H5V4Zm3 0v5h8V4M8 14h8v6H8v-6Z",
+  check: "M5 13l4 4L19 7",
 };
 
 export function NavIcon({ name, className }: { name: string; className?: string }) {

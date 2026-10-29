@@ -1,7 +1,17 @@
 import type { NextFunction, Request, Response } from "express";
 import { getOrCreateDefaultWorkspace } from "../services/workspace.service.js";
-import { deleteAsset, getAsset, listAssets, saveGeneratedAsset } from "../services/assets.service.js";
-import type { ListAssetsQuery, SaveAssetRequest } from "../validation/asset.schema.js";
+import {
+  deleteAsset,
+  getAsset,
+  listAssets,
+  saveGeneratedAsset,
+  updateAssetProject,
+} from "../services/assets.service.js";
+import type {
+  ListAssetsQuery,
+  SaveAssetRequest,
+  UpdateAssetProjectRequest,
+} from "../validation/asset.schema.js";
 
 export async function getAssets(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -37,6 +47,20 @@ export async function postAsset(
     const workspaceId = await getOrCreateDefaultWorkspace(req.user!.id);
     const asset = await saveGeneratedAsset(workspaceId, req.user!.id, req.body);
     res.status(201).json({ ok: true, asset });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function patchAssetProject(
+  req: Request<{ id: string }, unknown, UpdateAssetProjectRequest>,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const workspaceId = await getOrCreateDefaultWorkspace(req.user!.id);
+    const asset = await updateAssetProject(workspaceId, req.params.id, req.body);
+    res.json({ ok: true, asset });
   } catch (error) {
     next(error);
   }

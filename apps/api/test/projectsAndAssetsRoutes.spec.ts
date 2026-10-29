@@ -288,4 +288,164 @@ describe("Assets API", () => {
     expect(store.tables.assets).toHaveLength(0);
     expect(store.tables.generation_jobs).toHaveLength(0);
   });
+
+  describe("PATCH /api/assets/:id (assign/move/unassign project)", () => {
+    it("requires authentication", async () => {
+      const response = await request(createApp())
+        .patch("/api/assets/00000000-0000-0000-0000-000000000000")
+        .send({ projectId: null });
+
+      expect(response.status).toBe(401);
+    });
+
+    it("rejects a request missing the projectId field", async () => {
+      const app = createApp();
+      const saved = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64 });
+
+      const response = await request(app)
+        .patch(`/api/assets/${saved.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+    });
+
+    it("assigns an asset to a project and the change is reflected in a subsequent list call", async () => {
+      const app = createApp();
+
+      const project = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ name: "Spring Launch" });
+
+      const saved = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64 });
+
+      const assigned = await request(app)
+        .patch(`/api/assets/${saved.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: project.body.project.id });
+
+      expect(assigned.status).toBe(200);
+      expect(assigned.body.asset.projectId).toBe(project.body.project.id);
+
+      const filtered = await request(app)
+        .get(`/api/assets?projectId=${project.body.project.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`);
+
+      expect(filtered.body.items).toHaveLength(1);
+      expect(filtered.body.items[0].id).toBe(saved.body.asset.id);
+    });
+
+    it("moves an asset from one project to another", async () => {
+      const app = createApp();
+
+      const projectA = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ name: "A" });
+      const projectB = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ name: "B" });
+
+      const saved = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64, projectId: projectA.body.project.id });
+
+      const moved = await request(app)
+        .patch(`/api/assets/${saved.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: projectB.body.project.id });
+
+      expect(moved.status).toBe(200);
+      expect(moved.body.asset.projectId).toBe(projectB.body.project.id);
+    });
+
+    it("unassigns an asset's project with projectId: null", async () => {
+      const app = createApp();
+
+      const project = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ name: "Spring Launch" });
+
+      const saved = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64, projectId: project.body.project.id });
+
+      const unassigned = await request(app)
+        .patch(`/api/assets/${saved.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: null });
+
+      expect(unassigned.status).toBe(200);
+      expect(unassigned.body.asset.projectId).toBeNull();
+    });
+
+    it("rejects assigning to an invalid (nonexistent) project id with 404", async () => {
+      const app = createApp();
+
+      const saved = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64 });
+
+      const response = await request(app)
+        .patch(`/api/assets/${saved.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: "00000000-0000-0000-0000-000000000000" });
+
+      expect(response.status).toBe(404);
+    });
+
+    it("rejects assigning another user's asset to one of your projects (cross-workspace IDOR check)", async () => {
+      const app = createApp();
+
+      const otherUsersAsset = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${OTHER_USER_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64 });
+
+      const myProject = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ name: "Mine" });
+
+      const response = await request(app)
+        .patch(`/api/assets/${otherUsersAsset.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: myProject.body.project.id });
+
+      expect(response.status).toBe(404);
+    });
+
+    it("rejects assigning your own asset to another user's project (cross-workspace IDOR check)", async () => {
+      const app = createApp();
+
+      const otherUsersProject = await request(app)
+        .post("/api/projects")
+        .set("Authorization", `Bearer ${OTHER_USER_TOKEN}`)
+        .send({ name: "Not yours" });
+
+      const myAsset = await request(app)
+        .post("/api/assets")
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ image: VALID_JPEG_BASE64 });
+
+      const response = await request(app)
+        .patch(`/api/assets/${myAsset.body.asset.id}`)
+        .set("Authorization", `Bearer ${VALID_TOKEN}`)
+        .send({ projectId: otherUsersProject.body.project.id });
+
+      expect(response.status).toBe(404);
+    });
+  });
 });

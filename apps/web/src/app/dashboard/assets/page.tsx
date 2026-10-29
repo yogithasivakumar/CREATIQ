@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import { NavIcon } from "@/components/dashboard/NavIcon";
 import { AssetCard, AssetCardSkeleton } from "@/components/library/AssetCard";
 import { AssetDetailModal } from "@/components/library/AssetDetailModal";
+import { AssignProjectModal } from "@/components/library/AssignProjectModal";
 import { ConfirmDialog } from "@/components/library/ConfirmDialog";
 import { Pagination } from "@/components/library/Pagination";
 import type { Asset, Project } from "@/components/library/types";
@@ -27,6 +28,17 @@ export default function AssetLibraryPage() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [assetPendingDeletion, setAssetPendingDeletion] = useState<Asset | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [assetPendingAssignment, setAssetPendingAssignment] = useState<Asset | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState("");
+
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const project of projects) {
+      map.set(project.id, project.name);
+    }
+    return map;
+  }, [projects]);
 
   useEffect(() => {
     apiFetch<{ projects: Project[] }>("/api/projects")
@@ -90,6 +102,37 @@ export default function AssetLibraryPage() {
       setError(err instanceof ApiError ? err.message : "Could not delete the asset.");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleAssign(asset: Asset, projectId: string | null) {
+    setAssigning(true);
+    setAssignError("");
+    try {
+      const data = await apiFetch<{ asset: Asset }>(`/api/assets/${asset.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ projectId }),
+      });
+
+      if (projectFilter && data.asset.projectId !== projectFilter) {
+        // The asset no longer matches the active project filter —
+        // remove it from view instead of leaving a stale entry that
+        // doesn't belong in this filtered list.
+        setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+        setTotal((prev) => prev - 1);
+      } else {
+        setAssets((prev) => prev.map((a) => (a.id === asset.id ? data.asset : a)));
+      }
+
+      if (selectedAsset?.id === asset.id) {
+        setSelectedAsset(data.asset);
+      }
+
+      setAssetPendingAssignment(null);
+    } catch (err) {
+      setAssignError(err instanceof ApiError ? err.message : "Could not move this asset.");
+    } finally {
+      setAssigning(false);
     }
   }
 
@@ -181,8 +224,13 @@ export default function AssetLibraryPage() {
               <AssetCard
                 key={asset.id}
                 asset={asset}
+                projectName={asset.projectId ? projectNameById.get(asset.projectId) : null}
                 onOpen={() => setSelectedAsset(asset)}
                 onDelete={() => setAssetPendingDeletion(asset)}
+                onAssign={() => {
+                  setAssignError("");
+                  setAssetPendingAssignment(asset);
+                }}
               />
             ))}
           </div>
@@ -194,8 +242,26 @@ export default function AssetLibraryPage() {
       {selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
+          projectName={
+            selectedAsset.projectId ? projectNameById.get(selectedAsset.projectId) : null
+          }
           onClose={() => setSelectedAsset(null)}
           onDelete={() => setAssetPendingDeletion(selectedAsset)}
+          onAssign={() => {
+            setAssignError("");
+            setAssetPendingAssignment(selectedAsset);
+          }}
+        />
+      )}
+
+      {assetPendingAssignment && (
+        <AssignProjectModal
+          projects={projects}
+          currentProjectId={assetPendingAssignment.projectId}
+          pending={assigning}
+          error={assignError}
+          onAssign={(projectId) => handleAssign(assetPendingAssignment, projectId)}
+          onClose={() => setAssetPendingAssignment(null)}
         />
       )}
 

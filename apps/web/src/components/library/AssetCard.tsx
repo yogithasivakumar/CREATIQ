@@ -13,12 +13,17 @@ function formatDate(iso: string): string {
 
 export function AssetCard({
   asset,
+  projectName,
   onOpen,
   onDelete,
+  onAssign,
 }: {
   asset: Asset;
+  /** The current project's name, if the asset is assigned to one. */
+  projectName?: string | null;
   onOpen: () => void;
   onDelete: () => void;
+  onAssign: () => void;
 }) {
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-aubergine/10 bg-white">
@@ -35,19 +40,36 @@ export function AssetCard({
         />
       </button>
 
-      <button
-        onClick={onDelete}
-        aria-label="Delete asset"
-        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-aubergine opacity-0 shadow transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
-      >
-        <NavIcon name="trash" className="h-4 w-4" />
-      </button>
+      <div className="absolute right-2 top-2 flex gap-2 opacity-0 transition group-hover:opacity-100">
+        <button
+          onClick={onAssign}
+          aria-label="Move to project"
+          title="Move to project"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-aubergine shadow hover:bg-marigold/15 hover:text-aubergine"
+        >
+          <NavIcon name="grid" className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onDelete}
+          aria-label="Delete asset"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-aubergine shadow hover:bg-red-50 hover:text-red-600"
+        >
+          <NavIcon name="trash" className="h-4 w-4" />
+        </button>
+      </div>
 
       <div className="p-3">
         <p className="line-clamp-2 text-xs text-aubergine/70">
           {asset.prompt ?? "No prompt recorded"}
         </p>
-        <p className="mt-1 text-[11px] text-aubergine/40">{formatDate(asset.createdAt)}</p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-[11px] text-aubergine/40">{formatDate(asset.createdAt)}</p>
+          {projectName && (
+            <span className="truncate rounded-full bg-marigold/15 px-2 py-0.5 text-[10px] font-semibold text-aubergine/70">
+              {projectName}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
