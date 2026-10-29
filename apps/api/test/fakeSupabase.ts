@@ -23,11 +23,21 @@ export class FakeSupabaseStore {
 
   storageFiles = new Map<string, Buffer>();
 
+  // Lets a test simulate a real-world DB/storage failure (e.g. the
+  // actual incident this was added for: an INSERT into `assets`
+  // failing because a migration adding project_id/prompt had never
+  // been applied to the live database, which surfaced to the user as
+  // a bare 500) without needing a real Postgres connection.
+  failNextInsert = new Map<string, string>();
+  failNextUpload = false;
+
   reset(): void {
     for (const key of Object.keys(this.tables)) {
       this.tables[key] = [];
     }
     this.storageFiles.clear();
+    this.failNextInsert.clear();
+    this.failNextUpload = false;
   }
 }
 
@@ -145,6 +155,15 @@ class QueryBuilder {
     const rows = this.store.tables[this.table] ?? (this.store.tables[this.table] = []);
 
     if (this.mode === "insert") {
+      const failureMessage = this.store.failNextInsert.get(this.table);
+      if (failureMessage) {
+        this.store.failNextInsert.delete(this.table);
+        return { data: null, error: new Error(failureMessage) } as unknown as {
+          data: unknown;
+          error: null;
+        };
+      }
+
       const row: Row = { id: randomUUID(), created_at: new Date().toISOString(), ...this.payload };
       if (!("updated_at" in row)) row.updated_at = row.created_at;
       if (!("status" in row) && this.table === "projects") row.status = "active";
@@ -217,6 +236,10 @@ class QueryBuilder {
 function buildStorageApi(store: FakeSupabaseStore, bucket: string) {
   return {
     upload: async (key: string, buffer: Buffer) => {
+      if (store.failNextUpload) {
+        store.failNextUpload = false;
+        return { data: null, error: new Error("Simulated storage upload failure") };
+      }
       store.storageFiles.set(`${bucket}/${key}`, buffer);
       return { data: { path: key }, error: null };
     },

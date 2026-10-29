@@ -196,6 +196,32 @@ describe("CORS", () => {
     expect(allowedHeaders).toContain("content-type");
   });
 
+  // Regression test: the Projects/Assets APIs use PATCH and DELETE
+  // (rename/delete), but the CORS middleware's allowed methods list
+  // only had GET/POST/OPTIONS. The preflight for PATCH/DELETE still
+  // returned 204, but without those methods in
+  // Access-Control-Allow-Methods a real browser blocks the actual
+  // request client-side — rename and delete silently appeared to "do
+  // nothing" even though curl/supertest (which don't enforce CORS)
+  // never showed a failure.
+  it("includes PATCH and DELETE in the preflight's Access-Control-Allow-Methods", async () => {
+    const response = await request(createApp())
+      .options("/api/projects/00000000-0000-0000-0000-000000000000")
+      .set("Origin", "http://localhost:3000")
+      .set("Access-Control-Request-Method", "PATCH")
+      .set("Access-Control-Request-Headers", "authorization,content-type");
+
+    expect(response.status).toBe(204);
+    const allowedMethods = (
+      response.headers["access-control-allow-methods"] ?? ""
+    )
+      .split(",")
+      .map((m: string) => m.trim().toUpperCase());
+
+    expect(allowedMethods).toContain("PATCH");
+    expect(allowedMethods).toContain("DELETE");
+  });
+
   it("includes Access-Control-Allow-Origin on a successful authenticated POST", async () => {
     const response = await request(createApp())
       .post("/api/generate")

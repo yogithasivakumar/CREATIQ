@@ -130,6 +130,23 @@ describe("Projects API", () => {
 
     expect(response.status).toBe(204);
   });
+
+  // Regression test for the real incident: a DB-level insert failure
+  // (in production, this was an unapplied migration — a column the
+  // code wrote to didn't exist yet) must surface as a clear error
+  // response, not be silently swallowed into an empty project list.
+  it("surfaces a database insert failure as a clean error response, not a silent no-op", async () => {
+    store.failNextInsert.set("projects", 'column "name" of relation "projects" does not exist');
+
+    const response = await request(createApp())
+      .post("/api/projects")
+      .set("Authorization", `Bearer ${VALID_TOKEN}`)
+      .send({ name: "Should fail" });
+
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    expect(response.body.error).toBeTruthy();
+    expect(store.tables.projects).toHaveLength(0);
+  });
 });
 
 describe("Assets API", () => {
@@ -234,5 +251,41 @@ describe("Assets API", () => {
       .set("Authorization", `Bearer ${VALID_TOKEN}`);
 
     expect(response.status).toBe(400);
+  });
+
+  // Regression test for the real incident: saving a generated image
+  // failed with a bare 500 because the `assets` table was missing the
+  // project_id/prompt columns a pending migration should have added.
+  // This simulates the same failure mode (a DB insert rejecting the
+  // write) without needing a real misconfigured database, and checks
+  // that the failure is reported cleanly and that the storage upload
+  // that already succeeded is rolled back rather than left orphaned.
+  it("surfaces an asset database insert failure as a clean error and rolls back the uploaded file", async () => {
+    store.failNextInsert.set("assets", 'column "project_id" of relation "assets" does not exist');
+
+    const response = await request(createApp())
+      .post("/api/assets")
+      .set("Authorization", `Bearer ${VALID_TOKEN}`)
+      .send({ image: VALID_JPEG_BASE64, prompt: "should roll back" });
+
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    expect(response.body.error).toBeTruthy();
+    // No secrets, tokens, or image bytes in the response.
+    expect(response.body.error).not.toContain(VALID_TOKEN);
+    expect(store.tables.assets).toHaveLength(0);
+    expect(store.storageFiles.size).toBe(0);
+  });
+
+  it("surfaces a storage upload failure as a clean error without creating any database rows", async () => {
+    store.failNextUpload = true;
+
+    const response = await request(createApp())
+      .post("/api/assets")
+      .set("Authorization", `Bearer ${VALID_TOKEN}`)
+      .send({ image: VALID_JPEG_BASE64 });
+
+    expect(response.status).toBeGreaterThanOrEqual(500);
+    expect(store.tables.assets).toHaveLength(0);
+    expect(store.tables.generation_jobs).toHaveLength(0);
   });
 });

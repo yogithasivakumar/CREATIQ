@@ -17,7 +17,7 @@ export function buildCorsMiddleware() {
 
       callback(new Error("Not allowed by CORS"));
     },
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     // Authorization is required here: /api/generate is behind
     // requireAuth (see middleware/auth.ts) and every browser request
     // to it sends a Bearer token. Without Authorization in this list,
