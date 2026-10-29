@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { ImageGenerationError } from "../services/ai/index.js";
 import { AppError } from "../services/appError.js";
+import { InstagramError } from "../services/instagram/instagramError.js";
 
 export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({ error: "Not found" });
@@ -30,6 +31,22 @@ export function errorHandler(
       rate_limited: 429,
       provider_error: 502,
       invalid_output: 502,
+    };
+
+    res.status(statusByKind[err.kind]).json({ error: err.message });
+    return;
+  }
+
+  if (err instanceof InstagramError) {
+    console.error(`[instagram:${err.kind}] ${err.message}`, err.cause ?? "");
+
+    const statusByKind: Record<typeof err.kind, number> = {
+      not_configured: 503,
+      not_connected: 409,
+      token_expired: 401,
+      invalid_media: 422,
+      rate_limited: 429,
+      provider_error: 502,
     };
 
     res.status(statusByKind[err.kind]).json({ error: err.message });

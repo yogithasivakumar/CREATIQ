@@ -25,6 +25,14 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(["stub", "cloudflare"]).default("stub"),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
+
+  // Instagram publishing via Meta's Graph API (Facebook Login for
+  // Business + Instagram Content Publishing API). All three must be
+  // set for /api/instagram/* to do anything beyond return a clear
+  // "not configured" error — see src/services/instagram/README.md.
+  META_APP_ID: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  META_REDIRECT_URI: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

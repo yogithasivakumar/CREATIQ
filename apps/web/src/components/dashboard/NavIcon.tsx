@@ -18,6 +18,14 @@ const PATHS: Record<string, string> = {
   grid: "M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z",
   save: "M5 4h11l3 3v13H5V4Zm3 0v5h8V4M8 14h8v6H8v-6Z",
   check: "M5 13l4 4L19 7",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4.5l3 2",
+  copy: "M8 8V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3M5 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z",
+  refresh: "M4 12a8 8 0 0 1 14.5-4.6M20 12a8 8 0 0 1-14.5 4.6M4 4v5h5M15 20h5v-5",
+  heart: "M12 20s-7-4.3-9.5-8.5C.7 8 2 4.5 5.5 4c2-.3 3.6.7 4.5 2 .9-1.3 2.5-2.3 4.5-2 3.5.5 4.8 4 3 7.5C19 15.7 12 20 12 20Z",
+  comment: "M4 5h16v10H8l-4 4V5Z",
+  send: "M4 12 20 4l-5 16-3-7-8-1Z",
+  bookmark: "M6 3h12v18l-6-4-6 4V3Z",
+  dots: "M5 12h.01M12 12h.01M19 12h.01",
 };
 
 export function NavIcon({ name, className }: { name: string; className?: string }) {

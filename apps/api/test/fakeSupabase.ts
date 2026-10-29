@@ -19,6 +19,9 @@ export class FakeSupabaseStore {
     assets: [],
     generation_jobs: [],
     generation_outputs: [],
+    user_settings: [],
+    instagram_connections: [],
+    scheduled_posts: [],
   };
 
   storageFiles = new Map<string, Buffer>();
@@ -62,10 +65,11 @@ class QueryBuilder {
   private orderAsc = true;
   private rangeFrom: number | null = null;
   private rangeTo: number | null = null;
-  private mode: "select" | "insert" | "update" | "delete" = "select";
+  private mode: "select" | "insert" | "update" | "delete" | "upsert" = "select";
   private payload: Row | undefined;
   private wantSingle = false;
   private wantCount = false;
+  private conflictKey: string | undefined;
 
   constructor(
     private store: FakeSupabaseStore,
@@ -83,6 +87,13 @@ class QueryBuilder {
   insert(payload: Row): this {
     this.mode = "insert";
     this.payload = payload;
+    return this;
+  }
+
+  upsert(payload: Row, opts?: { onConflict?: string }): this {
+    this.mode = "upsert";
+    this.payload = payload;
+    this.conflictKey = opts?.onConflict;
     return this;
   }
 
@@ -182,6 +193,30 @@ class QueryBuilder {
         });
       }
 
+      return { data: this.wantSingle ? row : [row], error: null };
+    }
+
+    if (this.mode === "upsert") {
+      const key = this.conflictKey ?? "id";
+      const conflictValue = this.payload?.[key];
+      const existingIndex = rows.findIndex((r) => r[key] === conflictValue);
+
+      if (existingIndex >= 0) {
+        rows[existingIndex] = {
+          ...rows[existingIndex],
+          ...this.payload,
+          updated_at: new Date().toISOString(),
+        };
+        return { data: this.wantSingle ? rows[existingIndex] : [rows[existingIndex]], error: null };
+      }
+
+      const row: Row = {
+        id: randomUUID(),
+        created_at: new Date().toISOString(),
+        ...this.payload,
+      };
+      if (!("updated_at" in row)) row.updated_at = row.created_at;
+      rows.push(row);
       return { data: this.wantSingle ? row : [row], error: null };
     }
 

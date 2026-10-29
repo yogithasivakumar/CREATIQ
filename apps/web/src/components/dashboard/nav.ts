@@ -43,24 +43,17 @@ export const NAV_ITEMS: NavItem[] = [
     implemented: false,
   },
   {
-    label: "AI Captions",
-    href: "/dashboard/captions",
-    description: "Generate captions for your content.",
-    icon: "message",
-    implemented: false,
-  },
-  {
     label: "Instagram Publishing",
     href: "/dashboard/instagram",
-    description: "Publish directly to Instagram.",
+    description: "Generate captions and publish directly to Instagram.",
     icon: "instagram",
-    implemented: false,
+    implemented: true,
   },
   {
     label: "Settings",
     href: "/dashboard/settings",
-    description: "Manage your account and workspace.",
+    description: "Manage your account and preferences.",
     icon: "settings",
-    implemented: false,
+    implemented: true,
   },
 ];

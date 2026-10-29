@@ -2,9 +2,12 @@ import express, { type Express } from "express";
 import { buildCorsMiddleware } from "./middleware/cors.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { assetsRouter } from "./routes/assets.routes.js";
+import { captionsRouter } from "./routes/captions.routes.js";
 import { generateRouter } from "./routes/generate.routes.js";
 import { healthRouter } from "./routes/health.routes.js";
+import { instagramRouter } from "./routes/instagram.routes.js";
 import { projectsRouter } from "./routes/projects.routes.js";
+import { settingsRouter } from "./routes/settings.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -16,6 +19,9 @@ export function createApp(): Express {
   app.use(generateRouter);
   app.use(projectsRouter);
   app.use(assetsRouter);
+  app.use(captionsRouter);
+  app.use(settingsRouter);
+  app.use(instagramRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
