@@ -100,16 +100,16 @@ export function PreviewPublishPanel({
           </span>
         </div>
 
-        <div className="aspect-square w-full bg-silver">
+        <div className="flex aspect-square w-full items-center justify-center bg-black">
           {selectedAsset ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={selectedAsset.url}
               alt={selectedAsset.prompt ?? "Selected asset"}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-xs text-aubergine/40">
+            <div className="flex h-full w-full items-center justify-center bg-silver text-xs text-aubergine/40">
               Select an image to preview
             </div>
           )}

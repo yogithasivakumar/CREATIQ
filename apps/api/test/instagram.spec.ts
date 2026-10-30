@@ -270,6 +270,49 @@ describe("POST /api/instagram/schedule — persistence and validation", () => {
   });
 });
 
+describe("GET /api/instagram/callback — redirect target", () => {
+  it("redirects errors to the frontend origin (CORS_ORIGIN), not a relative path", async () => {
+    const response = await request(createApp())
+      .get("/api/instagram/callback")
+      .query({ error: "access_denied" });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      "http://localhost:3000/dashboard/instagram?instagram=error&reason=access_denied"
+    );
+  });
+
+  it("URL-encodes the error reason in the redirect", async () => {
+    const response = await request(createApp())
+      .get("/api/instagram/callback")
+      .query({ error: "user denied: extra permissions" });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      "http://localhost:3000/dashboard/instagram?instagram=error&reason=user%20denied%3A%20extra%20permissions"
+    );
+  });
+
+  it("redirects to the frontend origin with a clear reason when code or state is missing", async () => {
+    const response = await request(createApp()).get("/api/instagram/callback");
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe(
+      "http://localhost:3000/dashboard/instagram?instagram=error&reason=missing_code_or_state"
+    );
+  });
+
+  it("never uses an untrusted request-supplied origin for the redirect", async () => {
+    const response = await request(createApp())
+      .get("/api/instagram/callback")
+      .query({ error: "x", frontendOrigin: "https://evil.example.com" });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.location!.startsWith("http://localhost:3000/")).toBe(true);
+    expect(response.headers.location).not.toMatch(/evil\.example\.com/);
+  });
+});
+
 describe("POST /api/instagram/disconnect", () => {
   it("requires authentication", async () => {
     const response = await request(createApp()).post("/api/instagram/disconnect");

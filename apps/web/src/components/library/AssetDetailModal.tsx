@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { NavIcon } from "@/components/dashboard/NavIcon";
 import type { Asset } from "./types";
 
@@ -94,6 +95,13 @@ export function AssetDetailModal({
           </dl>
 
           <div className="mt-auto flex gap-3 pt-6">
+            <Link
+              href={`/dashboard/creative-editor?assetId=${asset.id}`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-marigold px-4 py-2.5 text-sm font-semibold text-aubergine transition hover:bg-marigold/90"
+            >
+              <NavIcon name="edit" className="h-4 w-4" />
+              Edit
+            </Link>
             <a
               href={asset.url}
               download

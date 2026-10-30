@@ -40,7 +40,7 @@ export function DashboardShell({
         <div className="w-9" aria-hidden="true" />
       </div>
 
-      <div className="flex">
+      <div className="flex h-[calc(100dvh-3.5rem)] lg:h-dvh">
         {/* Desktop sidebar */}
         <aside className="hidden w-72 shrink-0 border-r border-aubergine/10 bg-white px-5 py-6 lg:flex lg:flex-col">
           <SidebarHeader />
@@ -68,7 +68,7 @@ export function DashboardShell({
           </div>
         )}
 
-        <main className="min-h-screen flex-1 px-4 py-6 sm:px-8 sm:py-10">
+        <main className="relative min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
           {children}
         </main>
       </div>

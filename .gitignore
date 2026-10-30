@@ -95,5 +95,10 @@ venv/
 supabase/migrations/*.backup.txt
 supabase/migrations/migration_for_review.txt
 
+# Temporary Instagram OAuth debug capture (never commit — may contain
+# redacted-token-free but otherwise real Meta API response data)
+oauth-debug.local.jsonl
+**/oauth-debug.local.jsonl
+
 # Nested lockfile; use the root workspace lockfile
 /apps/web/package-lock.json

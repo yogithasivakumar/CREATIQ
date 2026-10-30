@@ -173,4 +173,24 @@ describe("InstagramPublishingPage", () => {
       expect(screen.getByRole("button", { name: /publish post now/i })).toBeEnabled();
     });
   });
+
+  it("shows the full selected image in the preview without cropping it", async () => {
+    mockFetchRouter();
+    const user = userEvent.setup();
+    render(<InstagramPublishingPage />);
+
+    const thumbnail = await screen.findByAltText("a luxury perfume bottle");
+    await user.click(thumbnail);
+
+    // Selecting an image renders it twice (library thumbnail + the
+    // Instagram preview); the preview copy is the one that must use
+    // object-contain (show the whole image) rather than object-cover
+    // (crop to fill), matching how Instagram itself letterboxes
+    // non-square posts instead of cropping them.
+    const images = screen.getAllByAltText("a luxury perfume bottle");
+    const previewImage = images.find((img) => img.className.includes("object-contain"));
+
+    expect(previewImage).toBeDefined();
+    expect(previewImage!.className).not.toMatch(/object-cover/);
+  });
 });

@@ -56,6 +56,7 @@ export function startInstagramConnect(userId: string, workspaceId: string): stri
     appId: config.appId,
     redirectUri: config.redirectUri,
     state,
+    loginConfigId: config.loginConfigId,
   });
 }
 
@@ -74,14 +75,14 @@ export async function completeInstagramConnect(
   }
   pendingOAuthStates.delete(state);
 
-  const { accessToken, expiresInSeconds } = await exchangeCodeForLongLivedToken({
+  const { accessToken, expiresInSeconds, shortLivedAccessToken } = await exchangeCodeForLongLivedToken({
     appId: config.appId,
     appSecret: config.appSecret,
     redirectUri: config.redirectUri,
     code,
   });
 
-  const account = await discoverInstagramAccount(accessToken);
+  const account = await discoverInstagramAccount(accessToken, shortLivedAccessToken);
   const username = await fetchInstagramUsername(
     account.instagramBusinessAccountId,
     account.pageAccessToken

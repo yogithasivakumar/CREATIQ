@@ -40,7 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/dashboard/creative-editor",
     description: "Edit and compose designs.",
     icon: "edit",
-    implemented: false,
+    implemented: true,
   },
   {
     label: "Instagram Publishing",

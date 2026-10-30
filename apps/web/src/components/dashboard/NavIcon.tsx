@@ -26,6 +26,17 @@ const PATHS: Record<string, string> = {
   send: "M4 12 20 4l-5 16-3-7-8-1Z",
   bookmark: "M6 3h12v18l-6-4-6 4V3Z",
   dots: "M5 12h.01M12 12h.01M19 12h.01",
+  crop: "M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2",
+  rotateLeft: "M8 4H4v4M4 4a8 8 0 1 0-1.5 9",
+  rotateRight: "M16 4h4v4M20 4a8 8 0 1 1 1.5 9",
+  flipHorizontal: "M12 2v20M18 4h2v16h-2l-4-8 4-8ZM6 4H4v16h2l4-8-4-8Z",
+  flipVertical: "M2 12h20M4 18v2h16v-2l-8-4-8 4ZM4 6V4h16v2l-8 4-8-4Z",
+  resize: "M9 21H3v-6M21 9V3h-6M21 3 3 21",
+  type: "M5 4h14M12 4v16M8 20h8",
+  shapes: "M9 3 3 15h6l-2 6 10-12h-6l2-6Z",
+  minus: "M5 12h14",
+  undo: "M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12H9",
+  layers: "M12 3 3 8l9 5 9-5-9-5ZM3 14l9 5 9-5M3 10l9 5 9-5",
 };
 
 export function NavIcon({ name, className }: { name: string; className?: string }) {

@@ -33,6 +33,11 @@ const envSchema = z.object({
   META_APP_ID: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
   META_REDIRECT_URI: z.string().url().optional(),
+  // ID of the Facebook Login for Business Configuration created in the
+  // App Dashboard (Facebook Login for Business -> Configurations). This
+  // bundles the token type, linked assets, and permissions, and replaces
+  // the OAuth dialog's `scope` parameter for this login product.
+  META_LOGIN_CONFIG_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

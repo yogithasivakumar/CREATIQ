@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { loadEnv } from "../config/env.js";
 import { getOrCreateDefaultWorkspace } from "../services/workspace.service.js";
 import {
   completeInstagramConnect,
@@ -36,7 +37,24 @@ export async function getInstagramConnectUrl(
   }
 }
 
-const FRONTEND_SETTINGS_URL = (origin: string) => `${origin}/dashboard/settings`;
+// The frontend origin to redirect back to after the OAuth round-trip.
+// This must come from server-side config (CORS_ORIGIN), never from a
+// request parameter — Meta's redirect is an unauthenticated browser
+// navigation, so an attacker-controlled "frontendOrigin" query param
+// would be an open redirect. CORS_ORIGIN may list multiple allowed
+// origins (comma-separated); the first one is the CREATIQ frontend's
+// own origin and is what the browser should land back on.
+function getFrontendOrigin(): string {
+  const env = loadEnv();
+  const [firstOrigin] = env.CORS_ORIGIN.split(",").map((origin) => origin.trim());
+  return firstOrigin;
+}
+
+// Route matches apps/web/src/app/dashboard/instagram/page.tsx, which
+// is where Instagram Publishing (and its Connect/caption/publish flow)
+// lives — both successful and failed connections return here so the
+// user lands back where they started the flow.
+const FRONTEND_INSTAGRAM_URL = (origin: string) => `${origin}/dashboard/instagram`;
 
 // This IS a real browser navigation from Meta, so it can't carry a
 // Bearer token — identity comes from the `state` value minted by
@@ -47,8 +65,7 @@ export async function getInstagramCallback(
   res: Response,
   _next: NextFunction
 ): Promise<void> {
-  const frontendOrigin = (req.query.frontendOrigin as string) || "";
-  const redirectBase = FRONTEND_SETTINGS_URL(frontendOrigin || "");
+  const redirectBase = FRONTEND_INSTAGRAM_URL(getFrontendOrigin());
 
   const code = req.query.code as string | undefined;
   const state = req.query.state as string | undefined;
